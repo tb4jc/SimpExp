@@ -25,32 +25,23 @@ public slots:
 
 private slots:
     void cbDriveLeftCurrentIndexChanged(int index);
-//    void on_treeViewLeft_doubleClicked(const QModelIndex &index);
     void leftPaneModelDirectoryLoaded(const QString &path);
     void on_pbRootLeft_clicked();
     void on_pbUpLeft_clicked();
+    void on_treeViewLeft_entered(const QModelIndex &index);
+    void on_treeViewLeft_activated(const QModelIndex &index);
 
 
     void cbDriveRightCurrentIndexChanged(int index);
-//    void on_treeViewRight_doubleClicked(const QModelIndex &index);
     void rightPaneModelDirectoryLoaded(const QString &path);
     void on_pbRootRight_clicked();
     void on_pbUpRight_clicked();
 
-    void on_treeViewLeft_entered(const QModelIndex &index);
-
     void on_treeViewRight_entered(const QModelIndex &index);
-
-//    void on_treeViewLeft_viewportEntered();
-
-//    void on_treeViewRight_viewportEntered();
-
-    void on_treeViewLeft_activated(const QModelIndex &index);
-
     void on_treeViewRight_activated(const QModelIndex &index);
 
 private:
-    void setPaneRoot(const QString &root, QComboBox *driveList, QTreeView *treeView);
+    void setPaneRoot(const QString &root, QComboBox *driveList, QTreeView *treeView, QLineEdit *leDriveInfo);
     void getDriveInfo(const QString &drive, QString &name, QString &type, QString &size, QString &free);
 
     QSettings appSettings;

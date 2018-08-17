@@ -16,7 +16,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     // set up treeViewLeft/Right first before setting combox
-    QString root = "C:";
+//    QString root = "C:";
     fileModelLeft = new QFileSystemModel(this);
     fileModelLeft->setFilter(QDir::NoDot|QDir::AllEntries);
     ui->treeViewLeft->setModel(fileModelLeft);
@@ -27,8 +27,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(fileModelLeft, SIGNAL(directoryLoaded(QString)), this, SLOT(leftPaneModelDirectoryLoaded(QString))/*, Qt::DirectConnection*/);
     connect(fileModelRight, SIGNAL(directoryLoaded(QString)), this, SLOT(rightPaneModelDirectoryLoaded(QString))/*, Qt::DirectConnection*/);
-    fileModelLeft->setRootPath(root);
-    fileModelRight->setRootPath(root);
+    fileModelLeft->setRootPath("");
+    fileModelRight->setRootPath("");
 
     QFileSystemModel* cbDriveLeftModel = new QFileSystemModel(this);
     cbDriveLeftModel->setFilter(QDir::Drives);
@@ -75,9 +75,9 @@ MainWindow::~MainWindow()
     delete fileModelRight;
 }
 
-void MainWindow::setPaneRoot(const QString &root, QComboBox *driveList, QTreeView *treeView)
+void MainWindow::setPaneRoot(const QString &root, QComboBox *driveList, QTreeView *treeView, QLineEdit *leDriveInfo)
 {
-    QFileSystemModel* model = (QFileSystemModel*)treeView->model();
+    QFileSystemModel* model = dynamic_cast<QFileSystemModel*>(treeView->model());
     int currentIndex = driveList->currentIndex();
     QString drive = root.split('/').at(0);
     int foundIndex = driveList->findText(drive);
@@ -89,86 +89,88 @@ void MainWindow::setPaneRoot(const QString &root, QComboBox *driveList, QTreeVie
         }
         else
         {
-            if (driveList == ui->cbDriveLeft)
-            {
-                cbDriveLeftCurrentIndexChanged(currentIndex);
-            }
-            else
-            {
-                cbDriveRightCurrentIndexChanged(currentIndex);
-            }
+            QString driveName = ui->cbDriveLeft->currentText();
+            QString size, free, partitionName, type;
+            getDriveInfo(driveName, partitionName, type, size, free);
+            QString driveInfo = QString("[%1] %2 GB of %3 GB free").arg(partitionName).arg(free).arg(size);
+            leDriveInfo->setText(driveInfo);
+            treeView->setRootIndex(model->index(root));
         }
     }
-
 }
+
 void MainWindow::LoadSettings()
 {
-    this->appSettings.beginGroup("MainWindow");
-    QRect defaultRect(100,100,1000, 800);
-    if (!this->restoreGeometry(this->appSettings.value("geometry").toByteArray()))
+    appSettings.beginGroup("MainWindow");
+    QRect defaultRect(200,200,1000, 800);
+    QString defLeftPaneRoot("C:");
+    QString defRightPaneRoot("C:");
+    QVariant defNameWidth(400);
+    QVariant defSizeWidth(100);
+    QVariant defTypeWidth(130);
+    QVariant defDateWidth(120);
+
+    if (!restoreGeometry(appSettings.value("geometry").toByteArray()))
     {
-        this->setGeometry(defaultRect);
+        setGeometry(defaultRect);
     }
-    QVariant name_width(600);
-    QVariant size_width(200);
-    QVariant type_width(200);
-    QVariant date_width(300);
-    this->ui->treeViewLeft->setColumnWidth(0, this->appSettings.value("left/name-col-width", name_width).toInt());
-    this->ui->treeViewLeft->setColumnWidth(1, this->appSettings.value("left/size-col-width", size_width).toInt());
-    this->ui->treeViewLeft->setColumnWidth(2, this->appSettings.value("left/type-col-width", type_width).toInt());
-    this->ui->treeViewLeft->setColumnWidth(3, this->appSettings.value("left/date-col-width", date_width).toInt());
-    this->ui->treeViewRight->setColumnWidth(0, this->appSettings.value("right/name-col-width", name_width).toInt());
-    this->ui->treeViewRight->setColumnWidth(1, this->appSettings.value("right/size-col-width", size_width).toInt());
-    this->ui->treeViewRight->setColumnWidth(2, this->appSettings.value("right/type-col-width", type_width).toInt());
-    this->ui->treeViewRight->setColumnWidth(3, this->appSettings.value("right/date-col-width", date_width).toInt());
-    this->appSettings.endGroup();
+    ui->treeViewLeft->setColumnWidth(0, appSettings.value("left/name-col-width", defNameWidth).toInt());
+    ui->treeViewLeft->setColumnWidth(1, appSettings.value("left/size-col-width", defSizeWidth).toInt());
+    ui->treeViewLeft->setColumnWidth(2, appSettings.value("left/type-col-width", defTypeWidth).toInt());
+    ui->treeViewLeft->setColumnWidth(3, appSettings.value("left/date-col-width", defDateWidth).toInt());
+    ui->treeViewRight->setColumnWidth(0, appSettings.value("right/name-col-width", defNameWidth).toInt());
+    ui->treeViewRight->setColumnWidth(1, appSettings.value("right/size-col-width", defSizeWidth).toInt());
+    ui->treeViewRight->setColumnWidth(2, appSettings.value("right/type-col-width", defTypeWidth).toInt());
+    ui->treeViewRight->setColumnWidth(3, appSettings.value("right/date-col-width", defDateWidth).toInt());
+    appSettings.endGroup();
 
-    this->appSettings.beginGroup("LeftPane");
-    QString leftPaneRoot = this->appSettings.value("rootDir", "C:").toString();
-    setPaneRoot(leftPaneRoot, ui->cbDriveLeft, ui->treeViewLeft);
-    this->appSettings.endGroup();
+    appSettings.beginGroup("LeftPane");
+    QString leftPaneRoot = appSettings.value("rootDir", defLeftPaneRoot).toString();
+    if (leftPaneRoot.isEmpty()) leftPaneRoot = defLeftPaneRoot;
+    setPaneRoot(leftPaneRoot, ui->cbDriveLeft, ui->treeViewLeft, ui->leDriveInfoLeft);
+    appSettings.endGroup();
 
-    this->appSettings.beginGroup("RightPane");
-    QString rightPaneRoot = this->appSettings.value("rootDir", "C:").toString();
-    setPaneRoot(rightPaneRoot, ui->cbDriveRight, ui->treeViewRight);
-    this->appSettings.endGroup();
+    appSettings.beginGroup("RightPane");
+    QString rightPaneRoot = appSettings.value("rootDir", defRightPaneRoot).toString();
+    if (rightPaneRoot.isEmpty()) rightPaneRoot = defRightPaneRoot;
+    setPaneRoot(rightPaneRoot, ui->cbDriveRight, ui->treeViewRight, ui->leDriveInfoRight);
+    appSettings.endGroup();
 }
 
 void MainWindow::SaveSettings()
 {
-    this->appSettings.beginGroup("MainWindow");
-    this->appSettings.setValue("geometry", this->saveGeometry());
-    this->appSettings.setValue("left/name-col-width", ui->treeViewLeft->columnWidth(0));
-    this->appSettings.setValue("left/size-col-width", ui->treeViewLeft->columnWidth(1));
-    this->appSettings.setValue("left/type-col-width", ui->treeViewLeft->columnWidth(2));
-    this->appSettings.setValue("left/date-col-width", ui->treeViewLeft->columnWidth(3));
-    this->appSettings.setValue("right/name-col-width", ui->treeViewRight->columnWidth(0));
-    this->appSettings.setValue("right/size-col-width", ui->treeViewRight->columnWidth(1));
-    this->appSettings.setValue("right/type-col-width", ui->treeViewRight->columnWidth(2));
-    this->appSettings.setValue("right/date-col-width", ui->treeViewRight->columnWidth(3));
-    this->appSettings.endGroup();
+    appSettings.beginGroup("MainWindow");
+    appSettings.setValue("geometry", saveGeometry());
+    appSettings.setValue("left/name-col-width", ui->treeViewLeft->columnWidth(0));
+    appSettings.setValue("left/size-col-width", ui->treeViewLeft->columnWidth(1));
+    appSettings.setValue("left/type-col-width", ui->treeViewLeft->columnWidth(2));
+    appSettings.setValue("left/date-col-width", ui->treeViewLeft->columnWidth(3));
+    appSettings.setValue("right/name-col-width", ui->treeViewRight->columnWidth(0));
+    appSettings.setValue("right/size-col-width", ui->treeViewRight->columnWidth(1));
+    appSettings.setValue("right/type-col-width", ui->treeViewRight->columnWidth(2));
+    appSettings.setValue("right/date-col-width", ui->treeViewRight->columnWidth(3));
+    appSettings.endGroup();
 
-    this->appSettings.beginGroup("LeftPane");
-    QString leftRootDir = fileModelLeft->rootDirectory().absolutePath();
-    this->appSettings.setValue("rootDir", leftRootDir);
-    this->appSettings.endGroup();
+    appSettings.beginGroup("LeftPane");
+    QString leftRootDir = ui->treeViewLeft->rootIndex().data(QFileSystemModel::FilePathRole).toString();
+    appSettings.setValue("rootDir", leftRootDir);
+    appSettings.endGroup();
 
-    this->appSettings.beginGroup("RightPane");
-    QString rightRootDir = fileModelRight->rootDirectory().absolutePath();
-    this->appSettings.setValue("rootDir", rightRootDir);
-    this->appSettings.endGroup();
+    appSettings.beginGroup("RightPane");
+    QString rightRootDir = ui->treeViewRight->rootIndex().data(QFileSystemModel::FilePathRole).toString();
+    appSettings.setValue("rootDir", rightRootDir);
+    appSettings.endGroup();
 }
 
 void MainWindow::aboutToQuit()
 {
-    this->SaveSettings();
+    SaveSettings();
 }
 
 
 // private slots
 
 // Left Pane Functions
-
 void MainWindow::cbDriveLeftCurrentIndexChanged(int /*index*/)
 {
     QString driveName = ui->cbDriveLeft->currentText();
@@ -177,20 +179,14 @@ void MainWindow::cbDriveLeftCurrentIndexChanged(int /*index*/)
     QString partitionName;
     QString type;
     getDriveInfo(driveName, partitionName, type, size, free);
-    QFileSystemModel* model = (QFileSystemModel*)ui->treeViewLeft->model();
-    if (model != NULL)
+    QFileSystemModel* model = dynamic_cast<QFileSystemModel*>(ui->treeViewLeft->model());
+    if (model)
     {
         QString driveInfo = QString("[%1] %2 GB of %3 GB free").arg(partitionName).arg(free).arg(size);
         ui->leDriveInfoLeft->setText(driveInfo);
         ui->treeViewLeft->setRootIndex(model->index(driveName));
     }
 }
-
-//void MainWindow::on_treeViewLeft_doubleClicked(const QModelIndex &index)
-//{
-//    QString sPath = fileModelLeft->fileInfo(index).absoluteFilePath();
-//    ui->treeViewLeft->setRootIndex(fileModelLeft->setRootPath(sPath));
-//}
 
 void MainWindow::leftPaneModelDirectoryLoaded(const QString &path)
 {
@@ -207,11 +203,24 @@ void MainWindow::on_pbUpLeft_clicked()
 {
     QModelIndex rootIdx = ui->treeViewLeft->rootIndex();
     QString rootIndexPath(rootIdx.data(QFileSystemModel::FilePathRole).toString());
-    if (!this->drives.contains(rootIndexPath))
+    if (!drives.contains(rootIndexPath))
     {
         ui->treeViewLeft->setRootIndex(rootIdx.parent());
     }
 }
+
+void MainWindow::on_treeViewLeft_entered(const QModelIndex &index)
+{
+    qDebug() << "Entered left pane's item " << fileModelLeft->fileName(index);
+}
+
+void MainWindow::on_treeViewLeft_activated(const QModelIndex &index)
+{
+    QString sPath = fileModelLeft->fileInfo(index).absoluteFilePath();
+//    ui->treeViewLeft->setRootIndex(fileModelLeft->setRootPath(sPath));
+    ui->treeViewLeft->setRootIndex(fileModelLeft->index(sPath));
+}
+
 
 // Right Pane Functions
 void MainWindow::cbDriveRightCurrentIndexChanged(int /*index*/)
@@ -222,20 +231,14 @@ void MainWindow::cbDriveRightCurrentIndexChanged(int /*index*/)
     QString partitionName;
     QString type;
     getDriveInfo(driveName, partitionName, type, size, free);
-    QFileSystemModel* model = (QFileSystemModel*)ui->treeViewRight->model();
-    if (model != NULL)
+    QFileSystemModel* model = dynamic_cast<QFileSystemModel*>(ui->treeViewRight->model());
+    if (model)
     {
         QString driveInfo= QString("[%1] %2 GB of %3 GB free").arg(partitionName).arg(free).arg(size);
         ui->leDriveInfoRight->setText(driveInfo);
         ui->treeViewRight->setRootIndex(model->index(driveName));
     }
 }
-
-//void MainWindow::on_treeViewRight_doubleClicked(const QModelIndex &index)
-//{
-//    QString sPath = fileModelRight->fileInfo(index).absoluteFilePath();
-//    ui->treeViewRight->setRootIndex(fileModelRight->setRootPath(sPath));
-//}
 
 void MainWindow::rightPaneModelDirectoryLoaded(const QString &path)
 {
@@ -245,17 +248,30 @@ void MainWindow::rightPaneModelDirectoryLoaded(const QString &path)
 void MainWindow::on_pbRootRight_clicked()
 {
     QString root = ui->cbDriveLeft->currentText();
-    ui->treeViewRight->setRootIndex(fileModelRight->setRootPath(root));
+//    ui->treeViewRight->setRootIndex(fileModelRight->setRootPath(root));
+    ui->treeViewRight->setRootIndex(fileModelRight->index(root));
 }
 
 void MainWindow::on_pbUpRight_clicked()
 {
     QModelIndex rootIdx = ui->treeViewRight->rootIndex();
     QString rootIndexPath(rootIdx.data(QFileSystemModel::FilePathRole).toString());
-    if (!this->drives.contains(rootIndexPath))
+    if (!drives.contains(rootIndexPath))
     {
         ui->treeViewRight->setRootIndex(rootIdx.parent());
     }
+}
+
+void MainWindow::on_treeViewRight_entered(const QModelIndex &index)
+{
+    qDebug() << "Entered right pane's item " << fileModelRight->fileName(index);
+}
+
+void MainWindow::on_treeViewRight_activated(const QModelIndex &index)
+{
+    QString sPath = fileModelRight->fileInfo(index).absoluteFilePath();
+//    ui->treeViewRight->setRootIndex(fileModelRight->setRootPath(sPath));
+    ui->treeViewRight->setRootIndex(fileModelRight->index(sPath));
 }
 
 
@@ -272,37 +288,4 @@ void MainWindow::getDriveInfo(const QString &drive, QString &name, QString &type
     double freeGB = double(storage.bytesAvailable())/1073741824;
     size.sprintf("%.3f", sizeGB);
     free.sprintf("%.3f", freeGB);
-}
-
-void MainWindow::on_treeViewLeft_entered(const QModelIndex &index)
-{
-    qDebug() << "Entered left pane's item " << fileModelLeft->fileName(index);
-}
-
-
-void MainWindow::on_treeViewRight_entered(const QModelIndex &index)
-{
-    qDebug() << "Entered right pane's item " << fileModelRight->fileName(index);
-}
-
-//void MainWindow::on_treeViewLeft_viewportEntered()
-//{
-//    qDebug() << "Left Pane entered";
-//}
-
-//void MainWindow::on_treeViewRight_viewportEntered()
-//{
-//    qDebug() << "Right Pane entered";
-//}
-
-void MainWindow::on_treeViewLeft_activated(const QModelIndex &index)
-{
-    QString sPath = fileModelLeft->fileInfo(index).absoluteFilePath();
-    ui->treeViewLeft->setRootIndex(fileModelLeft->setRootPath(sPath));
-}
-
-void MainWindow::on_treeViewRight_activated(const QModelIndex &index)
-{
-    QString sPath = fileModelRight->fileInfo(index).absoluteFilePath();
-    ui->treeViewRight->setRootIndex(fileModelRight->setRootPath(sPath));
 }
