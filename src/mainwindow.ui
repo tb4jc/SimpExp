@@ -138,7 +138,32 @@
          </widget>
         </item>
         <item>
-         <widget class="QTreeView" name="treeViewLeft"/>
+         <widget class="QTreeView" name="treeViewLeft">
+          <property name="indentation">
+           <number>20</number>
+          </property>
+          <property name="rootIsDecorated">
+           <bool>false</bool>
+          </property>
+          <property name="uniformRowHeights">
+           <bool>true</bool>
+          </property>
+          <property name="itemsExpandable">
+           <bool>false</bool>
+          </property>
+          <property name="sortingEnabled">
+           <bool>true</bool>
+          </property>
+          <property name="allColumnsShowFocus">
+           <bool>true</bool>
+          </property>
+          <property name="expandsOnDoubleClick">
+           <bool>false</bool>
+          </property>
+          <attribute name="headerStretchLastSection">
+           <bool>false</bool>
+          </attribute>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -254,7 +279,26 @@
          </widget>
         </item>
         <item>
-         <widget class="QTreeView" name="treeViewRight"/>
+         <widget class="QTreeView" name="treeViewRight">
+          <property name="indentation">
+           <number>20</number>
+          </property>
+          <property name="rootIsDecorated">
+           <bool>false</bool>
+          </property>
+          <property name="itemsExpandable">
+           <bool>false</bool>
+          </property>
+          <property name="sortingEnabled">
+           <bool>true</bool>
+          </property>
+          <property name="allColumnsShowFocus">
+           <bool>true</bool>
+          </property>
+          <property name="expandsOnDoubleClick">
+           <bool>false</bool>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -273,10 +317,9 @@
    </property>
    <widget class="QMenu" name="menu_Files">
     <property name="title">
-     <string>&amp;Files</string>
+     <string>&amp;File</string>
     </property>
     <addaction name="separator"/>
-    <addaction name="action_Quit"/>
    </widget>
    <widget class="QMenu" name="menu_Commands">
     <property name="title">
@@ -303,25 +346,27 @@
     <bool>false</bool>
    </property>
   </action>
+  <action name="action_Open">
+   <property name="text">
+    <string>&amp;Open ...</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <tabstops>
+  <tabstop>cbDriveLeft</tabstop>
+  <tabstop>cbDriveRight</tabstop>
+  <tabstop>treeViewLeft</tabstop>
+  <tabstop>treeViewRight</tabstop>
+  <tabstop>lePathLeft</tabstop>
+  <tabstop>pbRootLeft</tabstop>
+  <tabstop>leDriveInfoLeft</tabstop>
+  <tabstop>leDriveInfoRight</tabstop>
+  <tabstop>pbRootRight</tabstop>
+  <tabstop>pbUpRight</tabstop>
+  <tabstop>lePathRight</tabstop>
+  <tabstop>pbUpLeft</tabstop>
+ </tabstops>
  <resources/>
- <connections>
-  <connection>
-   <sender>action_Quit</sender>
-   <signal>triggered()</signal>
-   <receiver>MainWindow</receiver>
-   <slot>close()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>460</x>
-     <y>264</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

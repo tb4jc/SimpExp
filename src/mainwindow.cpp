@@ -6,6 +6,8 @@
 #include <QDir>
 #include <QFileInfoList>
 #include <QStorageInfo>
+#include <QKeyEvent>
+#include <QDesktopServices>
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -19,16 +21,15 @@ MainWindow::MainWindow(QWidget *parent) :
 //    QString root = "C:";
     fileModelLeft = new QFileSystemModel(this);
     fileModelLeft->setFilter(QDir::NoDot|QDir::AllEntries);
+    fileModelLeft->setRootPath("");
     ui->treeViewLeft->setModel(fileModelLeft);
+    connect(fileModelLeft, SIGNAL(directoryLoaded(QString)), this, SLOT(leftPaneModelDirectoryLoaded(QString))/*, Qt::DirectConnection*/);
 
     fileModelRight = new QFileSystemModel(this);
     fileModelRight->setFilter(QDir::NoDot|QDir::AllEntries);
-    ui->treeViewRight->setModel(fileModelRight);
-
-    connect(fileModelLeft, SIGNAL(directoryLoaded(QString)), this, SLOT(leftPaneModelDirectoryLoaded(QString))/*, Qt::DirectConnection*/);
-    connect(fileModelRight, SIGNAL(directoryLoaded(QString)), this, SLOT(rightPaneModelDirectoryLoaded(QString))/*, Qt::DirectConnection*/);
-    fileModelLeft->setRootPath("");
     fileModelRight->setRootPath("");
+    ui->treeViewRight->setModel(fileModelRight);
+    connect(fileModelRight, SIGNAL(directoryLoaded(QString)), this, SLOT(rightPaneModelDirectoryLoaded(QString))/*, Qt::DirectConnection*/);
 
     QFileSystemModel* cbDriveLeftModel = new QFileSystemModel(this);
     cbDriveLeftModel->setFilter(QDir::Drives);
@@ -58,14 +59,15 @@ MainWindow::MainWindow(QWidget *parent) :
         }
     }
 
-    connect(ui->cbDriveLeft, SIGNAL(currentIndexChanged(int)), this, SLOT(cbDriveLeftCurrentIndexChanged(int)) /*, Qt::DirectConnection*/);
-    connect(ui->cbDriveRight, SIGNAL(currentIndexChanged(int)), this, SLOT(cbDriveRightCurrentIndexChanged(int)) /*, Qt::DirectConnection*/);
+    connect(ui->cbDriveLeft, SIGNAL(currentIndexChanged(int)), this, SLOT(cbDriveLeftCurrentIndexChanged(int)));
+    connect(ui->cbDriveRight, SIGNAL(currentIndexChanged(int)), this, SLOT(cbDriveRightCurrentIndexChanged(int)));
+
+    setupMenuBar();
+
+    ui->treeViewLeft->sortByColumn(0, Qt::AscendingOrder);
+    ui->treeViewRight->sortByColumn(0, Qt::AscendingOrder);
 
     LoadSettings();
-
-    // root directories not loaded yet - manul selected drive C:
-//    cbDriveLeftCurrentIndexChanged(0);
-//    cbDriveRightCurrentIndexChanged(0);
 }
 
 MainWindow::~MainWindow()
@@ -73,6 +75,74 @@ MainWindow::~MainWindow()
     delete ui;
     delete fileModelLeft;
     delete fileModelRight;
+}
+
+void MainWindow::setupMenuBar()
+{
+    // Files menu
+    QAction *openFile = new QAction("Open ...", ui->menu_Files);
+    openFile->setShortcut(QKeySequence::Open);
+    openFile->setToolTip("Opens the selected file or directory");
+    connect(openFile, SIGNAL(triggererd()), this, SLOT(open()));
+    ui->menu_Files->addAction(openFile);
+
+    ui->treeViewLeft->addAction(openFile);
+    ui->treeViewRight->addAction(openFile);
+    ui->treeViewLeft->setContextMenuPolicy(Qt::ActionsContextMenu);
+    ui->treeViewRight->setContextMenuPolicy(Qt::ActionsContextMenu);
+
+    ui->menu_Files->addSeparator();
+
+    QAction *file_quit = new QAction("Quit", ui->menu_Files);
+    connect(file_quit, SIGNAL(triggered()), this, SLOT(close()), Qt::DirectConnection);
+    ui->menu_Files->addAction(file_quit);
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *keyEvent)
+{
+    bool keyEventConsumed = false;
+
+    if (keyEvent->key() == Qt::Key_Tab)
+    {
+        if (ui->treeViewLeft->hasFocus())
+        {
+            ui->treeViewRight->setFocus();
+            keyEventConsumed = true;
+        }
+        else if (ui->treeViewRight->hasFocus())
+        {
+            ui->treeViewLeft->setFocus();
+            keyEventConsumed = true;
+        }
+    }
+    m_keysPressed += static_cast<Qt::Key>(keyEvent->key());
+
+    if (!keyEventConsumed) this->QMainWindow::keyPressEvent(keyEvent);
+}
+
+
+void MainWindow::keyReleaseEvent(QKeyEvent *keyEvent)
+{
+    bool keyEventConsumed = false;
+    if (m_keysPressed.size() > 0)
+    {
+        if (m_keysPressed.contains(Qt::Key_Alt) && m_keysPressed.contains(Qt::Key_F1))
+        {
+            ui->cbDriveLeft->setFocus();
+            ui->cbDriveLeft->showPopup();
+            keyEventConsumed = true;
+        }
+        else if (m_keysPressed.contains(Qt::Key_Alt) && m_keysPressed.contains(Qt::Key_F2))
+        {
+            ui->cbDriveRight->setFocus();
+            ui->cbDriveRight->showPopup();
+            keyEventConsumed = true;
+        }
+    }
+
+    m_keysPressed -= static_cast<Qt::Key>(keyEvent->key());
+
+    if (!keyEventConsumed) this->QMainWindow::keyPressEvent(keyEvent);
 }
 
 void MainWindow::setPaneRoot(const QString &root, QComboBox *driveList, QTreeView *treeView, QLineEdit *leDriveInfo)
@@ -169,7 +239,19 @@ void MainWindow::aboutToQuit()
 
 
 // private slots
-
+void MainWindow::open()
+{
+    if (ui->treeViewLeft->hasFocus())
+    {
+        QModelIndex index = ui->treeViewLeft->currentIndex();
+        on_treeViewLeft_activated(index);
+    }
+    else if (ui->treeViewRight->hasFocus())
+    {
+        QModelIndex index = ui->treeViewRight->currentIndex();
+        on_treeViewRight_activated(index);
+    }
+}
 // Left Pane Functions
 void MainWindow::cbDriveLeftCurrentIndexChanged(int /*index*/)
 {
@@ -185,12 +267,15 @@ void MainWindow::cbDriveLeftCurrentIndexChanged(int /*index*/)
         QString driveInfo = QString("[%1] %2 GB of %3 GB free").arg(partitionName).arg(free).arg(size);
         ui->leDriveInfoLeft->setText(driveInfo);
         ui->treeViewLeft->setRootIndex(model->index(driveName));
+        leftPaneModelDirectoryLoaded(driveName + QDir::separator());
     }
 }
 
 void MainWindow::leftPaneModelDirectoryLoaded(const QString &path)
 {
     ui->lePathLeft->setText(QDir::toNativeSeparators(QFileInfo(path).absoluteFilePath()));
+    ui->treeViewLeft->setFocus();
+    ui->treeViewLeft->setCurrentIndex(fileModelLeft->index(0,0, ui->treeViewLeft->rootIndex()));
 }
 
 void MainWindow::on_pbRootLeft_clicked()
@@ -213,12 +298,20 @@ void MainWindow::on_treeViewLeft_entered(const QModelIndex &index)
 {
     qDebug() << "Entered left pane's item " << fileModelLeft->fileName(index);
 }
-
+;
 void MainWindow::on_treeViewLeft_activated(const QModelIndex &index)
 {
-    QString sPath = fileModelLeft->fileInfo(index).absoluteFilePath();
-//    ui->treeViewLeft->setRootIndex(fileModelLeft->setRootPath(sPath));
-    ui->treeViewLeft->setRootIndex(fileModelLeft->index(sPath));
+    QFileInfo curFileLeft = fileModelLeft->fileInfo(index);
+    QString sPath = curFileLeft.absoluteFilePath();
+    if (curFileLeft.isDir())
+    {
+        ui->treeViewLeft->setRootIndex(fileModelLeft->index(sPath));
+        leftPaneModelDirectoryLoaded(sPath);
+    }
+    else
+    {
+        QDesktopServices::openUrl(QUrl("file:///" + sPath));
+    }
 }
 
 
@@ -237,18 +330,26 @@ void MainWindow::cbDriveRightCurrentIndexChanged(int /*index*/)
         QString driveInfo= QString("[%1] %2 GB of %3 GB free").arg(partitionName).arg(free).arg(size);
         ui->leDriveInfoRight->setText(driveInfo);
         ui->treeViewRight->setRootIndex(model->index(driveName));
+        rightPaneModelDirectoryLoaded(driveName + QDir::separator());
     }
 }
 
 void MainWindow::rightPaneModelDirectoryLoaded(const QString &path)
 {
-    ui->lePathRight->setText(QDir::toNativeSeparators(QFileInfo(path).absoluteFilePath()));
+    QString lPath = QDir::toNativeSeparators(QFileInfo(path).absoluteFilePath());
+    ui->lePathRight->setText(lPath);
+    ui->treeViewRight->setFocus();
+
+    ui->treeViewRight->setCurrentIndex(fileModelRight->index(0,0, ui->treeViewRight->rootIndex()));
+//    QItemSelectionModel *model = ui->treeViewRight->selectionModel();
+//    QModelIndex curIndex = ui->treeViewRight->currentIndex();
+//    QString curPath = fileModelRight->filePath(curIndex);
+//    model->select(curIndex, QItemSelectionModel::Select);
 }
 
 void MainWindow::on_pbRootRight_clicked()
 {
     QString root = ui->cbDriveLeft->currentText();
-//    ui->treeViewRight->setRootIndex(fileModelRight->setRootPath(root));
     ui->treeViewRight->setRootIndex(fileModelRight->index(root));
 }
 
@@ -269,9 +370,17 @@ void MainWindow::on_treeViewRight_entered(const QModelIndex &index)
 
 void MainWindow::on_treeViewRight_activated(const QModelIndex &index)
 {
-    QString sPath = fileModelRight->fileInfo(index).absoluteFilePath();
-//    ui->treeViewRight->setRootIndex(fileModelRight->setRootPath(sPath));
-    ui->treeViewRight->setRootIndex(fileModelRight->index(sPath));
+    QFileInfo curFileRight = fileModelRight->fileInfo(index);
+    QString sPath = curFileRight.absoluteFilePath();
+    if (curFileRight.isDir())
+    {
+        ui->treeViewRight->setRootIndex(fileModelRight->index(sPath));
+        rightPaneModelDirectoryLoaded(sPath);
+    }
+    else
+    {
+        QDesktopServices::openUrl(QUrl("file:///" + sPath));
+    }
 }
 
 
@@ -289,3 +398,33 @@ void MainWindow::getDriveInfo(const QString &drive, QString &name, QString &type
     size.sprintf("%.3f", sizeGB);
     free.sprintf("%.3f", freeGB);
 }
+
+//void MainWindow::on_treeViewLeft_customContextMenuRequested(const QPoint &pos)
+//{
+//    QModelIndex index = ui->treeViewLeft->indexAt(pos);
+//    QString seletedFilePath = fileModelLeft->filePath(index);
+
+//    QMenu *menu = new QMenu(this);
+//    menu->addAction(QString("Open file ..."), this, SLOT(on_leftPane_openFile()));
+//    menu->popup(ui->treeViewLeft->viewport()->mapToGlobal(pos));
+//}
+
+//void MainWindow::on_leftPane_openFile(bool checked)
+//{
+//    Q_UNUSED(checked);
+//    QModelIndex index = ui->treeViewLeft->currentIndex();
+//    QString seletedFilePath = fileModelLeft->filePath(index);
+//    QDesktopServices::openUrl(QUrl("file:///" + seletedFilePath));
+//}
+
+//void MainWindow::on_treeViewRight_customContextMenuRequested(const QPoint &pos)
+//{
+//    QModelIndex index=ui->treeViewLeft->indexAt(pos);
+//    QString seletedFilePath = fileModelLeft->filePath(index);
+
+//    QMenu *menu=new QMenu(this);
+//    menu->addAction(new QAction("Action 1", this));
+//    menu->addAction(new QAction("Action 2", this));
+//    menu->addAction(new QAction("Action 3", this));
+//    menu->popup(ui->treeViewLeft->viewport()->mapToGlobal(pos));
+//}
