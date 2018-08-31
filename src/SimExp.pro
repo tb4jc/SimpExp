@@ -25,10 +25,13 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         main.cpp \
-        mainwindow.cpp
+        mainwindow.cpp \
+        syncdirdialog.cpp
 
 HEADERS += \
-        mainwindow.h
+        mainwindow.h \
+        syncdirdialog.h
 
 FORMS += \
-        mainwindow.ui
+        mainwindow.ui \
+        syncdirdialog.ui

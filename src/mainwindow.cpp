@@ -8,26 +8,30 @@
 #include <QStorageInfo>
 #include <QKeyEvent>
 #include <QDesktopServices>
+#include "syncdirdialog.h"
 
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     appSettings(QApplication::applicationDirPath() + "/SimpExp.ini", QSettings::IniFormat),
-    ui(new Ui::MainWindow)
+    ui(new Ui::MainWindow),
+    firstRunLeft(true),
+    firstRunRight(true)
 {
     ui->setupUi(this);
 
     // set up treeViewLeft/Right first before setting combox
-//    QString root = "C:";
     fileModelLeft = new QFileSystemModel(this);
     fileModelLeft->setFilter(QDir::NoDot|QDir::AllEntries);
     fileModelLeft->setRootPath("");
+    ui->treeViewLeft->setUpdatesEnabled(false);
     ui->treeViewLeft->setModel(fileModelLeft);
     connect(fileModelLeft, SIGNAL(directoryLoaded(QString)), this, SLOT(leftPaneModelDirectoryLoaded(QString))/*, Qt::DirectConnection*/);
 
     fileModelRight = new QFileSystemModel(this);
     fileModelRight->setFilter(QDir::NoDot|QDir::AllEntries);
     fileModelRight->setRootPath("");
+    ui->treeViewRight->setUpdatesEnabled(false);
     ui->treeViewRight->setModel(fileModelRight);
     connect(fileModelRight, SIGNAL(directoryLoaded(QString)), this, SLOT(rightPaneModelDirectoryLoaded(QString))/*, Qt::DirectConnection*/);
 
@@ -37,7 +41,6 @@ MainWindow::MainWindow(QWidget *parent) :
     foreach(const QFileInfo& drive, driveFileInfos)
     {
         QString absDrivePath = drive.absolutePath();
-//        qDebug() << "Drive: " << absDrivePath;
         QModelIndex driveIdx = cbDriveLeftModel->index(drive.absolutePath());
         QString driveName = driveIdx.data(Qt::DisplayRole).toString();
         if (!driveName.isEmpty())
@@ -59,14 +62,11 @@ MainWindow::MainWindow(QWidget *parent) :
         }
     }
 
+    delete cbDriveLeftModel;
     connect(ui->cbDriveLeft, SIGNAL(currentIndexChanged(int)), this, SLOT(cbDriveLeftCurrentIndexChanged(int)));
     connect(ui->cbDriveRight, SIGNAL(currentIndexChanged(int)), this, SLOT(cbDriveRightCurrentIndexChanged(int)));
 
     setupMenuBar();
-
-    ui->treeViewLeft->sortByColumn(0, Qt::AscendingOrder);
-    ui->treeViewRight->sortByColumn(0, Qt::AscendingOrder);
-
     LoadSettings();
 }
 
@@ -80,10 +80,10 @@ MainWindow::~MainWindow()
 void MainWindow::setupMenuBar()
 {
     // Files menu
-    QAction *openFile = new QAction("Open ...", ui->menu_Files);
+    QAction *openFile = new QAction("Open ...", this);
     openFile->setShortcut(QKeySequence::Open);
     openFile->setToolTip("Opens the selected file or directory");
-    connect(openFile, SIGNAL(triggererd()), this, SLOT(open()));
+    connect(openFile, SIGNAL(triggered()), this, SLOT(open()));
     ui->menu_Files->addAction(openFile);
 
     ui->treeViewLeft->addAction(openFile);
@@ -93,9 +93,15 @@ void MainWindow::setupMenuBar()
 
     ui->menu_Files->addSeparator();
 
-    QAction *file_quit = new QAction("Quit", ui->menu_Files);
-    connect(file_quit, SIGNAL(triggered()), this, SLOT(close()), Qt::DirectConnection);
+    QAction *file_quit = new QAction("Quit", this);
+    connect(file_quit, SIGNAL(triggered()), this, SLOT(close()));
     ui->menu_Files->addAction(file_quit);
+
+    QAction *compareDirs = new QAction("&Compare Dirs ...", this);
+    openFile->setToolTip("Opens a dialog for comparing the current left and rigth directory");
+    connect(compareDirs, SIGNAL(triggered()), this, SLOT(syncDirs()));
+    ui->menu_Commands->addAction(compareDirs);
+
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *keyEvent)
@@ -237,6 +243,7 @@ void MainWindow::aboutToQuit()
     SaveSettings();
 }
 
+// public slots
 
 // private slots
 void MainWindow::open()
@@ -252,6 +259,13 @@ void MainWindow::open()
         on_treeViewRight_activated(index);
     }
 }
+
+void MainWindow::syncDirs()
+{
+    SyncDirDialog syncDirDialog(this);
+    syncDirDialog.show();
+}
+
 // Left Pane Functions
 void MainWindow::cbDriveLeftCurrentIndexChanged(int /*index*/)
 {
@@ -276,6 +290,13 @@ void MainWindow::leftPaneModelDirectoryLoaded(const QString &path)
     ui->lePathLeft->setText(QDir::toNativeSeparators(QFileInfo(path).absoluteFilePath()));
     ui->treeViewLeft->setFocus();
     ui->treeViewLeft->setCurrentIndex(fileModelLeft->index(0,0, ui->treeViewLeft->rootIndex()));
+
+    if (firstRunLeft)
+    {
+        ui->treeViewLeft->sortByColumn(0, Qt::AscendingOrder);
+        ui->treeViewLeft->setUpdatesEnabled(true);
+        firstRunLeft = false;
+    }
 }
 
 void MainWindow::on_pbRootLeft_clicked()
@@ -341,10 +362,13 @@ void MainWindow::rightPaneModelDirectoryLoaded(const QString &path)
     ui->treeViewRight->setFocus();
 
     ui->treeViewRight->setCurrentIndex(fileModelRight->index(0,0, ui->treeViewRight->rootIndex()));
-//    QItemSelectionModel *model = ui->treeViewRight->selectionModel();
-//    QModelIndex curIndex = ui->treeViewRight->currentIndex();
-//    QString curPath = fileModelRight->filePath(curIndex);
-//    model->select(curIndex, QItemSelectionModel::Select);
+
+    if (firstRunRight)
+    {
+        ui->treeViewRight->sortByColumn(0, Qt::AscendingOrder);
+        ui->treeViewRight->setUpdatesEnabled(true);
+        firstRunRight = false;
+    }
 }
 
 void MainWindow::on_pbRootRight_clicked()

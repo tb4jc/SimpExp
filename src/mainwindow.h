@@ -22,9 +22,10 @@ public:
 
 public slots:
     void aboutToQuit();
-    void open();
 
 private slots:
+    void open();
+    void syncDirs();
 
     void cbDriveLeftCurrentIndexChanged(int index);
     void leftPaneModelDirectoryLoaded(const QString &path);
@@ -58,7 +59,9 @@ private:
     Ui::MainWindow *ui;
     QStringList drives;
     QFileSystemModel* fileModelLeft;
+    bool firstRunLeft;
     QFileSystemModel* fileModelRight;
+    bool firstRunRight;
 
     QSet<Qt::Key> m_keysPressed;
 };
