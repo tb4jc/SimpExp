@@ -12,6 +12,7 @@ class DirSyncTreeModel : public QAbstractItemModel
     Q_OBJECT
 
 public:
+    explicit DirSyncTreeModel(QObject *parent = nullptr);
     explicit DirSyncTreeModel(const QString &data, QObject *parent = nullptr);
     ~DirSyncTreeModel() override;
 
@@ -28,7 +29,7 @@ public:
 private:
     void setupModelData(const QStringList &lines, DirSyncTreeItem *parent);
 
-    DirSyncTreeItem *root;
+    DirSyncTreeItem *rootItem;
 };
 
 #endif // DIRSYNCTREEMODEL_H

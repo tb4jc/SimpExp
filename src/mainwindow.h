@@ -59,9 +59,7 @@ private:
     Ui::MainWindow *ui;
     QStringList drives;
     QFileSystemModel* fileModelLeft;
-    bool firstRunLeft;
     QFileSystemModel* fileModelRight;
-    bool firstRunRight;
 
     QSet<Qt::Key> m_keysPressed;
 };

@@ -14,9 +14,7 @@
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     appSettings(QApplication::applicationDirPath() + "/SimpExp.ini", QSettings::IniFormat),
-    ui(new Ui::MainWindow),
-    firstRunLeft(true),
-    firstRunRight(true)
+    ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 
@@ -24,14 +22,14 @@ MainWindow::MainWindow(QWidget *parent) :
     fileModelLeft = new QFileSystemModel(this);
     fileModelLeft->setFilter(QDir::NoDot|QDir::AllEntries);
     fileModelLeft->setRootPath("");
-    ui->treeViewLeft->setUpdatesEnabled(false);
+    ui->treeViewLeft->sortByColumn(0, Qt::AscendingOrder);
     ui->treeViewLeft->setModel(fileModelLeft);
     connect(fileModelLeft, SIGNAL(directoryLoaded(QString)), this, SLOT(leftPaneModelDirectoryLoaded(QString))/*, Qt::DirectConnection*/);
 
     fileModelRight = new QFileSystemModel(this);
     fileModelRight->setFilter(QDir::NoDot|QDir::AllEntries);
     fileModelRight->setRootPath("");
-    ui->treeViewRight->setUpdatesEnabled(false);
+    ui->treeViewRight->sortByColumn(0, Qt::AscendingOrder);
     ui->treeViewRight->setModel(fileModelRight);
     connect(fileModelRight, SIGNAL(directoryLoaded(QString)), this, SLOT(rightPaneModelDirectoryLoaded(QString))/*, Qt::DirectConnection*/);
 
@@ -262,7 +260,7 @@ void MainWindow::open()
 
 void MainWindow::syncDirs()
 {
-    SyncDirDialog syncDirDialog(this);
+    SyncDirDialog *syncDirDialog = new SyncDirDialog(this);
     QModelIndex rootIdxLeft = ui->treeViewLeft->rootIndex();
     QString leftRoot(rootIdxLeft.data(QFileSystemModel::FilePathRole).toString());
     QModelIndex rootIdxRight = ui->treeViewRight->rootIndex();
@@ -273,10 +271,10 @@ void MainWindow::syncDirs()
     {
         colSizes.append(ui->treeViewLeft->columnWidth(col));
     }
-    syncDirDialog.setPaneColWidths(colSizes);
-    syncDirDialog.setPaneRoots(leftRoot, rightRoot);
-    syncDirDialog.exec();
-    qDebug() << "closed sync dir dialog";
+    syncDirDialog->setPaneColWidths(colSizes);
+    syncDirDialog->setPaneRoots(leftRoot, rightRoot);
+    syncDirDialog->setWindowModality(Qt::ApplicationModal);
+    syncDirDialog->show();
 }
 
 // Left Pane Functions
@@ -303,13 +301,6 @@ void MainWindow::leftPaneModelDirectoryLoaded(const QString &path)
     ui->lePathLeft->setText(QDir::toNativeSeparators(QFileInfo(path).absoluteFilePath()));
     ui->treeViewLeft->setFocus();
     ui->treeViewLeft->setCurrentIndex(fileModelLeft->index(0,0, ui->treeViewLeft->rootIndex()));
-
-    if (firstRunLeft)
-    {
-        ui->treeViewLeft->sortByColumn(0, Qt::AscendingOrder);
-        ui->treeViewLeft->setUpdatesEnabled(true);
-        firstRunLeft = false;
-    }
 }
 
 void MainWindow::on_pbRootLeft_clicked()
@@ -375,13 +366,6 @@ void MainWindow::rightPaneModelDirectoryLoaded(const QString &path)
     ui->treeViewRight->setFocus();
 
     ui->treeViewRight->setCurrentIndex(fileModelRight->index(0,0, ui->treeViewRight->rootIndex()));
-
-    if (firstRunRight)
-    {
-        ui->treeViewRight->sortByColumn(0, Qt::AscendingOrder);
-        ui->treeViewRight->setUpdatesEnabled(true);
-        firstRunRight = false;
-    }
 }
 
 void MainWindow::on_pbRootRight_clicked()

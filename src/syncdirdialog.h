@@ -1,15 +1,16 @@
 #ifndef SYNCDIRDIALOG_H
 #define SYNCDIRDIALOG_H
 
-#include <QDialog>
+#include <QWidget>
 #include <QFileInfo>
 #include "filesystemmodel.h"
+#include "dirsynctreemodel.h"
 
 namespace Ui {
 class SyncDirDialog;
 }
 
-class SyncDirDialog : public QDialog
+class SyncDirDialog : public QWidget
 {
     Q_OBJECT
 
@@ -19,10 +20,18 @@ public:
     void setPaneRoots(QString &leftRoot, QString &rightRoot);
     void setPaneColWidths(QList<int> &colSizes);
 
+private slots:
+    void on_pushButtonClose_released();
+
+    void on_pushButtonLeftPathSelector_released();
+
+    void on_pushButtonRightPathSelector_released();
+
 private:
     Ui::SyncDirDialog *ui;
-    FileSystemModel leftFileSystem;
-    FileSystemModel rightFileSystem;
+    FileSystemModel fsmLeft;
+    FileSystemModel fsmRight;
+    DirSyncTreeModel dirSyncTreeModel;
 };
 
 #endif // SYNCDIRDIALOG_H
