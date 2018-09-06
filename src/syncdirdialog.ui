@@ -10,8 +10,14 @@
     <height>609</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Sychronize Directories</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
@@ -179,7 +185,23 @@
           </layout>
          </item>
          <item>
-          <widget class="QTreeView" name="treeViewLeft"/>
+          <widget class="QTreeView" name="treeViewLeft">
+           <property name="rootIsDecorated">
+            <bool>false</bool>
+           </property>
+           <property name="uniformRowHeights">
+            <bool>true</bool>
+           </property>
+           <property name="sortingEnabled">
+            <bool>true</bool>
+           </property>
+           <property name="allColumnsShowFocus">
+            <bool>true</bool>
+           </property>
+           <attribute name="headerStretchLastSection">
+            <bool>false</bool>
+           </attribute>
+          </widget>
          </item>
         </layout>
        </widget>
@@ -225,7 +247,23 @@
           </layout>
          </item>
          <item>
-          <widget class="QTreeView" name="treeViewRight"/>
+          <widget class="QTreeView" name="treeViewRight">
+           <property name="rootIsDecorated">
+            <bool>false</bool>
+           </property>
+           <property name="uniformRowHeights">
+            <bool>true</bool>
+           </property>
+           <property name="sortingEnabled">
+            <bool>true</bool>
+           </property>
+           <property name="allColumnsShowFocus">
+            <bool>true</bool>
+           </property>
+           <attribute name="headerStretchLastSection">
+            <bool>false</bool>
+           </attribute>
+          </widget>
          </item>
         </layout>
        </widget>

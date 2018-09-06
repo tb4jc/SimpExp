@@ -263,7 +263,20 @@ void MainWindow::open()
 void MainWindow::syncDirs()
 {
     SyncDirDialog syncDirDialog(this);
-    syncDirDialog.show();
+    QModelIndex rootIdxLeft = ui->treeViewLeft->rootIndex();
+    QString leftRoot(rootIdxLeft.data(QFileSystemModel::FilePathRole).toString());
+    QModelIndex rootIdxRight = ui->treeViewRight->rootIndex();
+    QString rightRoot(rootIdxRight.data(QFileSystemModel::FilePathRole).toString());
+
+    QList<int> colSizes;
+    for(int col = 0; col < fileModelLeft->columnCount(); col++)
+    {
+        colSizes.append(ui->treeViewLeft->columnWidth(col));
+    }
+    syncDirDialog.setPaneColWidths(colSizes);
+    syncDirDialog.setPaneRoots(leftRoot, rightRoot);
+    syncDirDialog.exec();
+    qDebug() << "closed sync dir dialog";
 }
 
 // Left Pane Functions

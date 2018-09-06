@@ -24,14 +24,20 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 
 SOURCES += \
-        main.cpp \
-        mainwindow.cpp \
-        syncdirdialog.cpp
+    main.cpp \
+    mainwindow.cpp \
+    syncdirdialog.cpp \
+    filesystemmodel.cpp \
+    dirsynctreemodel.cpp \
+    dirsynctreeitem.cpp
 
 HEADERS += \
-        mainwindow.h \
-        syncdirdialog.h
+    mainwindow.h \
+    syncdirdialog.h \
+    filesystemmodel.h \
+    dirsynctreemodel.h \
+    dirsynctreeitem.h
 
 FORMS += \
-        mainwindow.ui \
-        syncdirdialog.ui
+    mainwindow.ui \
+    syncdirdialog.ui
