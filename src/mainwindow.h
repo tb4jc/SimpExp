@@ -17,7 +17,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
+    explicit MainWindow(QSettings *settings, QWidget *parent = nullptr);
     ~MainWindow();
 
 public slots:
@@ -55,7 +55,7 @@ private:
     void SaveSettings();
 
     QModelIndex curSelectedIndex;
-    QSettings appSettings;
+    QSettings *appSettings;
     Ui::MainWindow *ui;
     QStringList drives;
     QFileSystemModel* fileModelLeft;

@@ -11,9 +11,9 @@
 #include "syncdirdialog.h"
 
 
-MainWindow::MainWindow(QWidget *parent) :
+MainWindow::MainWindow(QSettings *settings, QWidget *parent) :
     QMainWindow(parent),
-    appSettings(QApplication::applicationDirPath() + "/SimpExp.ini", QSettings::IniFormat),
+    appSettings(settings),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
@@ -175,7 +175,7 @@ void MainWindow::setPaneRoot(const QString &root, QComboBox *driveList, QTreeVie
 
 void MainWindow::LoadSettings()
 {
-    appSettings.beginGroup("MainWindow");
+    appSettings->beginGroup("MainWindow");
     QRect defaultRect(200,200,1000, 800);
     QString defLeftPaneRoot("C:");
     QString defRightPaneRoot("C:");
@@ -184,56 +184,56 @@ void MainWindow::LoadSettings()
     QVariant defTypeWidth(130);
     QVariant defDateWidth(120);
 
-    if (!restoreGeometry(appSettings.value("geometry").toByteArray()))
+    if (!restoreGeometry(appSettings->value("geometry").toByteArray()))
     {
         setGeometry(defaultRect);
     }
-    ui->treeViewLeft->setColumnWidth(0, appSettings.value("left/name-col-width", defNameWidth).toInt());
-    ui->treeViewLeft->setColumnWidth(1, appSettings.value("left/size-col-width", defSizeWidth).toInt());
-    ui->treeViewLeft->setColumnWidth(2, appSettings.value("left/type-col-width", defTypeWidth).toInt());
-    ui->treeViewLeft->setColumnWidth(3, appSettings.value("left/date-col-width", defDateWidth).toInt());
-    ui->treeViewRight->setColumnWidth(0, appSettings.value("right/name-col-width", defNameWidth).toInt());
-    ui->treeViewRight->setColumnWidth(1, appSettings.value("right/size-col-width", defSizeWidth).toInt());
-    ui->treeViewRight->setColumnWidth(2, appSettings.value("right/type-col-width", defTypeWidth).toInt());
-    ui->treeViewRight->setColumnWidth(3, appSettings.value("right/date-col-width", defDateWidth).toInt());
-    appSettings.endGroup();
+    ui->treeViewLeft->setColumnWidth(0, appSettings->value("left/name-col-width", defNameWidth).toInt());
+    ui->treeViewLeft->setColumnWidth(1, appSettings->value("left/size-col-width", defSizeWidth).toInt());
+    ui->treeViewLeft->setColumnWidth(2, appSettings->value("left/type-col-width", defTypeWidth).toInt());
+    ui->treeViewLeft->setColumnWidth(3, appSettings->value("left/date-col-width", defDateWidth).toInt());
+    ui->treeViewRight->setColumnWidth(0, appSettings->value("right/name-col-width", defNameWidth).toInt());
+    ui->treeViewRight->setColumnWidth(1, appSettings->value("right/size-col-width", defSizeWidth).toInt());
+    ui->treeViewRight->setColumnWidth(2, appSettings->value("right/type-col-width", defTypeWidth).toInt());
+    ui->treeViewRight->setColumnWidth(3, appSettings->value("right/date-col-width", defDateWidth).toInt());
+    appSettings->endGroup();
 
-    appSettings.beginGroup("LeftPane");
-    QString leftPaneRoot = appSettings.value("rootDir", defLeftPaneRoot).toString();
+    appSettings->beginGroup("LeftPane");
+    QString leftPaneRoot = appSettings->value("rootDir", defLeftPaneRoot).toString();
     if (leftPaneRoot.isEmpty()) leftPaneRoot = defLeftPaneRoot;
     setPaneRoot(leftPaneRoot, ui->cbDriveLeft, ui->treeViewLeft, ui->leDriveInfoLeft);
-    appSettings.endGroup();
+    appSettings->endGroup();
 
-    appSettings.beginGroup("RightPane");
-    QString rightPaneRoot = appSettings.value("rootDir", defRightPaneRoot).toString();
+    appSettings->beginGroup("RightPane");
+    QString rightPaneRoot = appSettings->value("rootDir", defRightPaneRoot).toString();
     if (rightPaneRoot.isEmpty()) rightPaneRoot = defRightPaneRoot;
     setPaneRoot(rightPaneRoot, ui->cbDriveRight, ui->treeViewRight, ui->leDriveInfoRight);
-    appSettings.endGroup();
+    appSettings->endGroup();
 }
 
 void MainWindow::SaveSettings()
 {
-    appSettings.beginGroup("MainWindow");
-    appSettings.setValue("geometry", saveGeometry());
-    appSettings.setValue("left/name-col-width", ui->treeViewLeft->columnWidth(0));
-    appSettings.setValue("left/size-col-width", ui->treeViewLeft->columnWidth(1));
-    appSettings.setValue("left/type-col-width", ui->treeViewLeft->columnWidth(2));
-    appSettings.setValue("left/date-col-width", ui->treeViewLeft->columnWidth(3));
-    appSettings.setValue("right/name-col-width", ui->treeViewRight->columnWidth(0));
-    appSettings.setValue("right/size-col-width", ui->treeViewRight->columnWidth(1));
-    appSettings.setValue("right/type-col-width", ui->treeViewRight->columnWidth(2));
-    appSettings.setValue("right/date-col-width", ui->treeViewRight->columnWidth(3));
-    appSettings.endGroup();
+    appSettings->beginGroup("MainWindow");
+    appSettings->setValue("geometry", saveGeometry());
+    appSettings->setValue("left/name-col-width", ui->treeViewLeft->columnWidth(0));
+    appSettings->setValue("left/size-col-width", ui->treeViewLeft->columnWidth(1));
+    appSettings->setValue("left/type-col-width", ui->treeViewLeft->columnWidth(2));
+    appSettings->setValue("left/date-col-width", ui->treeViewLeft->columnWidth(3));
+    appSettings->setValue("right/name-col-width", ui->treeViewRight->columnWidth(0));
+    appSettings->setValue("right/size-col-width", ui->treeViewRight->columnWidth(1));
+    appSettings->setValue("right/type-col-width", ui->treeViewRight->columnWidth(2));
+    appSettings->setValue("right/date-col-width", ui->treeViewRight->columnWidth(3));
+    appSettings->endGroup();
 
-    appSettings.beginGroup("LeftPane");
+    appSettings->beginGroup("LeftPane");
     QString leftRootDir = ui->treeViewLeft->rootIndex().data(QFileSystemModel::FilePathRole).toString();
-    appSettings.setValue("rootDir", leftRootDir);
-    appSettings.endGroup();
+    appSettings->setValue("rootDir", leftRootDir);
+    appSettings->endGroup();
 
-    appSettings.beginGroup("RightPane");
+    appSettings->beginGroup("RightPane");
     QString rightRootDir = ui->treeViewRight->rootIndex().data(QFileSystemModel::FilePathRole).toString();
-    appSettings.setValue("rootDir", rightRootDir);
-    appSettings.endGroup();
+    appSettings->setValue("rootDir", rightRootDir);
+    appSettings->endGroup();
 }
 
 void MainWindow::aboutToQuit()
@@ -260,20 +260,13 @@ void MainWindow::open()
 
 void MainWindow::syncDirs()
 {
-    SyncDirDialog *syncDirDialog = new SyncDirDialog(this);
     QModelIndex rootIdxLeft = ui->treeViewLeft->rootIndex();
     QString leftRoot(rootIdxLeft.data(QFileSystemModel::FilePathRole).toString());
     QModelIndex rootIdxRight = ui->treeViewRight->rootIndex();
     QString rightRoot(rootIdxRight.data(QFileSystemModel::FilePathRole).toString());
 
-    QList<int> colSizes;
-    for(int col = 0; col < fileModelLeft->columnCount(); col++)
-    {
-        colSizes.append(ui->treeViewLeft->columnWidth(col));
-    }
-    syncDirDialog->setPaneColWidths(colSizes);
-    syncDirDialog->setPaneRoots(leftRoot, rightRoot);
-    syncDirDialog->setWindowModality(Qt::ApplicationModal);
+    SyncDirDialog *syncDirDialog = new SyncDirDialog(appSettings, leftRoot, rightRoot, this);
+//    syncDirDialog->setPaneRoots(leftRoot, rightRoot);
     syncDirDialog->show();
 }
 
@@ -419,6 +412,7 @@ void MainWindow::getDriveInfo(const QString &drive, QString &name, QString &type
     size.sprintf("%.3f", sizeGB);
     free.sprintf("%.3f", freeGB);
 }
+
 
 //void MainWindow::on_treeViewLeft_customContextMenuRequested(const QPoint &pos)
 //{
