@@ -48,3 +48,9 @@ int DirSyncTreeItem::row() const
 
     return 0;
 }
+
+void DirSyncTreeItem::resetItem()
+{
+    qDeleteAll(m_childItems);
+    m_childItems.clear();
+}

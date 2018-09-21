@@ -40,6 +40,7 @@ private:
     void addDirSiblings(DirSyncTreeItem *parent, QFileInfo &topDir, bool isLeft);
     void compareFiles(DirSyncTreeItem *parent, QFileInfo& leftFile, QFileInfo& righFile);
     void compareDirs(DirSyncTreeItem *parent, const QString &leftRootPath, const QString &rightRootPath);
+    QString formatSize(qint64 fileSize);
 
     DirSyncTreeItem *rootItem;
     QString leftTopDir;

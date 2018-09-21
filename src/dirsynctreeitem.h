@@ -20,6 +20,7 @@ public:
     int columnCount() const;
     QVariant data(int column) const;
     int row() const;
+    void resetItem();
 
 private:
     DirSyncTreeItem *m_parentItem;

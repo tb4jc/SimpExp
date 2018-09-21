@@ -22,20 +22,59 @@ DirSyncTreeModel::~DirSyncTreeModel()
     delete rootItem;
 }
 
+QString DirSyncTreeModel::formatSize(qint64 fileSize)
+{
+    double formatedFileSize = fileSize;
+    QStringList sizes;
+    sizes << "B" << "kB" << "MB" << "GB" << "TB";
+    int idx = 0;
+    while((idx < 5) && (formatedFileSize > 1024))
+    {
+        formatedFileSize /= 1024;
+        idx++;
+    }
+    return QString("%1 %2").arg(formatedFileSize, 0, 'g', 3).arg(sizes.at(idx));
+}
+
 void DirSyncTreeModel::addDirSiblings(DirSyncTreeItem *parent, QFileInfo &topDir, bool isLeft)
 {
     // TODO: loop over siblings
+    QDir top(topDir.absoluteFilePath());
     QList<QVariant> columnData;
     if (isLeft)
     {
-        columnData << topDir.absoluteFilePath() << "" << "" << "" << "->" << "" << "" << "" << "";
+        columnData << topDir.absoluteFilePath() << "" << "" << "" << "=>" << "" << "" << "" << "";
     }
     else
     {
-        columnData << "" << "" << "" << "" << "" << topDir.absoluteFilePath() << "" << "" << "";
+        columnData << "" << "" << "" << "" << "<=" << topDir.absoluteFilePath() << "" << "" << "";
     }
 
-    parent->appendChild(new DirSyncTreeItem(columnData, parent));
+    DirSyncTreeItem *topDirItem = new DirSyncTreeItem(columnData, parent);
+    parent->appendChild(topDirItem);
+
+    QFileInfoList files = top.entryInfoList(QDir::NoDotAndDotDot|QDir::NoSymLinks|QDir::Dirs|QDir::Files, QDir::DirsFirst|QDir::Name);
+    foreach(QFileInfo file, files)
+    {
+        if (file.isDir())
+        {
+            addDirSiblings(topDirItem, file, isLeft);
+        }
+        else
+        {
+            QList<QVariant> fileData;
+            if (isLeft)
+            {
+                fileData << file.completeBaseName() << file.suffix() << formatSize(file.size()) << file.fileTime(QFile::FileModificationTime) << "=>" << "" << "" << "" << "";
+            }
+            else
+            {
+                fileData << "" << "" << "" << "" << "<=" << file.completeBaseName() << file.suffix() << formatSize(file.size()) << file.fileTime(QFile::FileModificationTime);
+            }
+
+            topDirItem->appendChild(new DirSyncTreeItem(fileData, topDirItem));
+        }
+    }
 }
 
 void DirSyncTreeModel::compareFiles(DirSyncTreeItem *parent, QFileInfo &leftFile, QFileInfo &rightFile)
@@ -69,14 +108,14 @@ void DirSyncTreeModel::compareFiles(DirSyncTreeItem *parent, QFileInfo &leftFile
     QList<QVariant> columnData;
     if (leftCompareName < rightCompareName)
     {
-        columnData << leftFileCompleteBaseName << leftFileExt << leftFileSize << leftFile.fileTime(QFile::FileModificationTime);
+        columnData << leftFileCompleteBaseName << leftFileExt << formatSize(leftFileSize) << leftFile.fileTime(QFile::FileModificationTime);
         columnData << "=>" << ""<< "" << "" << "";
 
     }
     else if (leftCompareName > rightCompareName)
     {
         columnData << "" << "" << "" << "";
-        columnData << "<=" << rightFileCompleteBaseName << rightFileExt << rightFileSize << rightFile.fileTime(QFile::FileModificationTime);
+        columnData << "<=" << rightFileCompleteBaseName << rightFileExt << formatSize(rightFileSize) << rightFile.fileTime(QFile::FileModificationTime);
     }
     else
     {
@@ -104,8 +143,8 @@ void DirSyncTreeModel::compareFiles(DirSyncTreeItem *parent, QFileInfo &leftFile
         }
         QList<QString> cmpSign;
         cmpSign << "<=" << "=" << "=>";
-        columnData << leftFileCompleteBaseName << leftFileExt << leftFileSize << leftFile.fileTime(QFile::FileModificationTime);
-        columnData << cmpSign.at(compVal+1) << rightFileCompleteBaseName << rightFileExt << rightFileSize << rightFile.fileTime(QFile::FileModificationTime);
+        columnData << leftFileCompleteBaseName << leftFileExt << formatSize(leftFileSize) << leftFile.fileTime(QFile::FileModificationTime);
+        columnData << cmpSign.at(compVal+1) << rightFileCompleteBaseName << rightFileExt << formatSize(rightFileSize) << rightFile.fileTime(QFile::FileModificationTime);
     }
     parent->appendChild(new DirSyncTreeItem(columnData, parent));
 }
@@ -178,7 +217,7 @@ void DirSyncTreeModel::compareDirs(DirSyncTreeItem *parent, const QString &leftR
             else
             {
                  QList<QVariant> columnData;
-                 columnData << (*iteratorLeftList).completeBaseName() << (*iteratorLeftList).suffix() << (*iteratorLeftList).size() << (*iteratorLeftList).fileTime(QFile::FileModificationTime);
+                 columnData << (*iteratorLeftList).completeBaseName() << (*iteratorLeftList).suffix() << formatSize((*iteratorLeftList).size()) << (*iteratorLeftList).fileTime(QFile::FileModificationTime);
                  columnData << "=>" << ""<< "" << "" << "";
                  parent->appendChild(new DirSyncTreeItem(columnData, parent));
             }
@@ -194,7 +233,7 @@ void DirSyncTreeModel::compareDirs(DirSyncTreeItem *parent, const QString &leftR
             {
                 QList<QVariant> columnData;
                 columnData << ""<< "" << "" << "" << "<=";
-                columnData << (*iteratorRightList).completeBaseName() << (*iteratorRightList).suffix() << (*iteratorRightList).size() << (*iteratorRightList).fileTime(QFile::FileModificationTime);
+                columnData << (*iteratorRightList).completeBaseName() << (*iteratorRightList).suffix() << formatSize((*iteratorRightList).size()) << (*iteratorRightList).fileTime(QFile::FileModificationTime);
                 parent->appendChild(new DirSyncTreeItem(columnData, parent));
             }
             iteratorRightList++;
@@ -208,7 +247,11 @@ void DirSyncTreeModel::setLeftAndRightTopDirs(QString &leftTopDir, QString &righ
     this->rightTopDir = rightTopDir;
     this->syncFlags = syncFlags;
 
-    beginInsertRows(QModelIndex(), 0, 9999999);
+    beginResetModel();
+    rootItem->resetItem();
+    endResetModel();
+
+    beginInsertRows(QModelIndex(), 0, 2);
     compareDirs(rootItem, leftTopDir, rightTopDir);
     endInsertRows();
 }

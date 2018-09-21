@@ -12,8 +12,6 @@ SyncDirDialog::SyncDirDialog(QSettings *settings, QString &leftRoot, QString &ri
     Q_UNUSED(parent);
     ui->setupUi(this);
 
-    LoadSettings();
-
     fsmLeft.setFilter(QDir::NoDotAndDotDot|QDir::Dirs);
     fsmRight.setFilter(QDir::NoDotAndDotDot|QDir::Dirs);
     ui->treeView->sortByColumn(0, Qt::AscendingOrder);
@@ -21,6 +19,7 @@ SyncDirDialog::SyncDirDialog(QSettings *settings, QString &leftRoot, QString &ri
     showMaximized();
     setAttribute(Qt::WA_DeleteOnClose);
 
+    LoadSettings();
     setPaneRoots(leftRoot, rightRoot);
 }
 
@@ -78,6 +77,7 @@ void SyncDirDialog::LoadSettings()
 {
     appSettings->beginGroup("SyncDirDialog");
     QRect defaultRect(200,200,1000, 800);
+    QVariant defCompFlagWidth(50);
     QVariant defNameLeftWidth(400);
     QVariant defExtLeftWidth(50);
     QVariant defSizeLeftWidth(100);
@@ -91,6 +91,7 @@ void SyncDirDialog::LoadSettings()
     {
         setGeometry(defaultRect);
     }
+    ui->treeView->setColumnWidth(4, appSettings->value("comp-flag-width", defCompFlagWidth).toInt());
     ui->treeView->setColumnWidth(0, appSettings->value("left/name-col-width", defNameLeftWidth).toInt());
     ui->treeView->setColumnWidth(1, appSettings->value("left/ext-col-width", defExtLeftWidth).toInt());
     ui->treeView->setColumnWidth(2, appSettings->value("left/size-col-width", defSizeLeftWidth).toInt());
@@ -99,22 +100,32 @@ void SyncDirDialog::LoadSettings()
     ui->treeView->setColumnWidth(6, appSettings->value("right/ext-col-width", defExtRightWidth).toInt());
     ui->treeView->setColumnWidth(7, appSettings->value("right/size-col-width", defSizeRightWidth).toInt());
     ui->treeView->setColumnWidth(8, appSettings->value("right/date-col-width", defDateRightWidth).toInt());
+    ui->checkBoxSubdir->setCheckState(appSettings->value("checkBoxSubdir", "false").toBool() ? Qt::Checked : Qt::Unchecked);
+    ui->checkBoxIgnoreDate->setCheckState(appSettings->value("checkBoxIgnoreDate", "false").toBool() ? Qt::Checked : Qt::Unchecked);
+    ui->checkBoxIgnoreExt->setCheckState(appSettings->value("checkBoxIgnoreExt", "false").toBool() ? Qt::Checked : Qt::Unchecked);
+    ui->checkBoxIgnoreSize->setCheckState(appSettings->value("checkBoxIgnoreSize", "false").toBool() ? Qt::Checked : Qt::Unchecked);
+    ui->checkBoxByContent->setCheckState(appSettings->value("checkBoxByContent", "false").toBool() ? Qt::Checked : Qt::Unchecked);
     appSettings->endGroup();
 }
-
 
 void SyncDirDialog::SaveSettings()
 {
     appSettings->beginGroup("SyncDirDialog");
     appSettings->setValue("geometry", saveGeometry());
+    appSettings->setValue("comp-flag-width", ui->treeView->columnWidth(4));
     appSettings->setValue("left/name-col-width", ui->treeView->columnWidth(0));
     appSettings->setValue("left/ext-col-width", ui->treeView->columnWidth(1));
     appSettings->setValue("left/size-col-width", ui->treeView->columnWidth(2));
     appSettings->setValue("left/date-col-width", ui->treeView->columnWidth(3));
-    appSettings->setValue("right/name-col-width", ui->treeView->columnWidth(0));
-    appSettings->setValue("right/ext-col-width", ui->treeView->columnWidth(1));
-    appSettings->setValue("right/size-col-width", ui->treeView->columnWidth(2));
-    appSettings->setValue("right/date-col-width", ui->treeView->columnWidth(3));
+    appSettings->setValue("right/name-col-width", ui->treeView->columnWidth(5));
+    appSettings->setValue("right/ext-col-width", ui->treeView->columnWidth(6));
+    appSettings->setValue("right/size-col-width", ui->treeView->columnWidth(7));
+    appSettings->setValue("right/date-col-width", ui->treeView->columnWidth(8));
+    appSettings->setValue("checkBoxSubdir", ui->checkBoxSubdir->isChecked());
+    appSettings->setValue("checkBoxIgnoreDate", ui->checkBoxIgnoreDate->isChecked());
+    appSettings->setValue("checkBoxIgnoreExt", ui->checkBoxIgnoreExt->isChecked());
+    appSettings->setValue("checkBoxIgnoreSize", ui->checkBoxIgnoreSize->isChecked());
+    appSettings->setValue("checkBoxByContent", ui->checkBoxByContent->isChecked());
     appSettings->endGroup();
 }
 
